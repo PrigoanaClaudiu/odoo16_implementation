@@ -10,4 +10,93 @@
             </xpath>
         </field>
     </record>
+
+    <record id="view_order_form_inherit_discount_approval" model="ir.ui.view">
+        <field name="name">sale.order.form.discount.approval</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+
+            <!-- Statusbar -->
+            <xpath expr="//field[@name='state']" position="attributes">
+                <attribute name="statusbar_visible">draft,sent,waiting_approval,sale</attribute>
+            </xpath>
+
+            <!-- Overall discount visible on the order -->
+            <xpath expr="//field[@name='payment_term_id']" position="after">
+                <field name="overall_discount" readonly="1"/>
+                <field name="is_discount_approval_manager" invisible="1"/>
+            </xpath>
+
+            <!-- Hide the standard Confirm buttons for non-managers when approval is required -->
+            <xpath expr="(//button[@name='action_confirm'])[1]" position="attributes">
+                <attribute name="attrs">
+                    {
+                    'invisible': [
+                    '|',
+                    ('state', 'not in', ('draft')),
+                    '&amp;',
+                    ('overall_discount', '&gt;', 15.0),
+                    ('is_discount_approval_manager', '=', False)
+                    ]
+                    }
+                </attribute>
+            </xpath>
+
+            <xpath expr="(//button[@name='action_confirm'])[2]" position="attributes">
+                <attribute name="attrs">
+                    {
+                    'invisible': [
+                    '|',
+                    ('state', 'not in', ('sent')),
+                    '&amp;',
+                    ('overall_discount', '&gt;', 15.0),
+                    ('is_discount_approval_manager', '=', False)
+                    ]
+                    }
+                </attribute>
+            </xpath>
+
+            <!-- Custom buttons -->
+            <xpath expr="//header" position="inside">
+
+                <!-- Request Approval: only non-manager, only draft/sent, only over 15% -->
+                <button
+                        name="action_request_discount_approval"
+                        type="object"
+                        string="Request Approval"
+                        class="btn-primary"
+                        attrs="{
+                    'invisible': [
+                        '|', '|',
+                        ('state', 'not in', ('draft', 'sent')),
+                        ('overall_discount', '&lt;=', 15.0),
+                        ('is_discount_approval_manager', '=', True)
+                    ]
+                }"
+                />
+
+                <!-- Confirm from Waiting Approval: only Sales Managers -->
+                <button
+                        name="action_confirm"
+                        type="object"
+                        string="Confirm"
+                        class="btn-primary"
+                        states="waiting_approval"
+                        groups="sales_team.group_sale_manager"
+                />
+            </xpath>
+
+            <!-- Send by Email also available in Waiting Approval -->
+            <xpath expr="//button[@name='action_quotation_send']" position="attributes">
+                <attribute name="states">draft,sent,waiting_approval</attribute>
+            </xpath>
+
+            <!-- Cancel also available in Waiting Approval -->
+            <xpath expr="//button[@name='action_cancel']" position="attributes">
+                <attribute name="states">draft,sent,waiting_approval</attribute>
+            </xpath>
+
+        </field>
+    </record>
 </odoo>
