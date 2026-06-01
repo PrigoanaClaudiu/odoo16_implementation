@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="view_partner_form_loyality_extended" model="ir.ui.view">
+        <field name="name">view.partner.form.loyality.extended</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='category_id']" position="after">
+                <field name="vip_tier"/>
+            </xpath>
+
+            <xpath expr="//group[@name='sale']" position="inside">
+                <field name="current_year_net_invoiced"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
