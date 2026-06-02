@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_sale_order_waiting_approval_tree" model="ir.ui.view">
+        <field name="name">sale.order.waiting.approval.tree</field>
+        <field name="model">sale.order</field>
+        <field name="arch" type="xml">
+            <tree string="Orders Waiting Approval" create="false" delete="false">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="user_id"/>
+                <field name="overall_discount"/>
+                <field name="amount_total"/>
+                <field name="activity_state" optional="hide"/>
+                <field name="activity_date_deadline" optional="show"/>
+                <field name="state" invisible="1"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_sale_order_waiting_approval_search" model="ir.ui.view">
+        <field name="name">sale.order.waiting.approval.search</field>
+        <field name="model">sale.order</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="user_id"/>
+
+                <separator/>
+
+                <group expand="0" string="Group By">
+                    <filter name="group_salesperson" string="Salesperson" context="{'group_by': 'user_id'}"/>
+                    <filter name="group_customer" string="Customer" context="{'group_by': 'partner_id'}"/>
+                    <filter name="group_deadline" string="Activity Deadline" context="{'group_by': 'activity_date_deadline'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_sale_order_waiting_approval" model="ir.actions.act_window">
+        <field name="name">Orders Waiting Approval</field>
+        <field name="res_model">sale.order</field>
+        <field name="view_mode">tree,form</field>
+        <field name="view_id" ref="view_sale_order_waiting_approval_tree"/>
+        <field name="search_view_id" ref="view_sale_order_waiting_approval_search"/>
+        <field name="domain">[('state', '=', 'waiting_approval')]</field>
+    </record>
+
+    <menuitem id="menu_sale_order_waiting_approval"
+              name="Waiting for Approval"
+              action="action_sale_order_waiting_approval"
+              groups="sales_team.group_sale_manager"
+              parent="sale.sale_order_menu"
+              sequence="15"/>
+</odoo>
