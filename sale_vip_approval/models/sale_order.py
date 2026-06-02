@@ -11,6 +11,23 @@ class SaleOrder(models.Model):
 
     is_discount_approval_manager = fields.Boolean(string="Is Discount Approval Manager", compute="_compute_is_discount_approval_manager",)
 
+    def _get_discount_approval_managers(self):
+        group = self.env.ref("sales_team.group_sale_manager")
+        return group.users if group else self.env["res.users"]
+
+    def _schedule_discount_approval_activities(self):
+        activity_type = self.env.ref("mail.mail_activity_data_todo")
+        for order in self:
+            for manager in order._get_discount_approval_managers():
+                order.activity_schedule(
+                    activity_type_id=activity_type.id,
+                    user_id=manager.id,
+                    summary=_("Discount approval required"),
+                    note=_(
+                        "Quotation %s requires approval. Overall discount is %.2f%%."
+                    ) % (order.name, order.overall_discount),
+                )
+
     @api.depends_context("uid")
     def _compute_is_discount_approval_manager(self):
         is_manager = self.env.user.has_group("sales_team.group_sale_manager")
@@ -43,18 +60,24 @@ class SaleOrder(models.Model):
                 raise UserError(
                     _("Sales Managers can confirm this quotation directly.")
                 )
-
-            order.write({
+            order.with_context(skip_discount_approval_lock=True)._schedule_discount_approval_activities()
+            order.with_context(skip_discount_approval_lock=True).write({
                 "state": "waiting_approval",
             })
 
-            order.message_post(
-                body=_(
-                    "Discount approval requested. Overall discount is %.2f%%."
-                ) % order.overall_discount
-            )
-
         return True
+
+    def _mark_discount_approval_activities_done(self):
+        activity_type = self.env.ref("mail.mail_activity_data_todo")
+        if not activity_type:
+            return
+
+        activities = self.activity_ids.filtered(
+            lambda activity:
+            activity.activity_type_id == activity_type
+            and activity.summary == _("Discount approval required")
+        )
+        activities.action_done()
 
     def action_confirm(self):
         for order in self:
@@ -66,7 +89,13 @@ class SaleOrder(models.Model):
                     ) % order.overall_discount
                 )
 
-        return super().action_confirm()
+        result = super().action_confirm()
+
+        for order in self:
+            if order.state == "sale" and order._is_discount_approval_manager():
+                order._mark_discount_approval_activities_done()
+
+        return result
 
     def _get_overall_discount(self):
         self.ensure_one()
@@ -87,12 +116,12 @@ class SaleOrder(models.Model):
             order.order_line._update_gold_discount()
 
     def write(self, vals):
-        protected_fields = {"message_follower_ids", "message_ids", "activity_ids", }
+        if self.env.context.get("skip_discount_approval_lock"):
+            return super().write(vals)
 
         for order in self:
             if order.state == "waiting_approval" and not order._is_discount_approval_manager():
-                if any(field not in protected_fields for field in vals):
-                    raise UserError(_("Only Sales Managers can modify orders waiting for approval."))
+                 raise UserError(_("Only Sales Managers can modify orders waiting for approval."))
 
         return super(SaleOrder, self).write(vals)
 
