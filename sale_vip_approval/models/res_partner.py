@@ -11,7 +11,7 @@ class ResPartner(models.Model):
     vip_tier = fields.Selection([('standard', 'Standard'), ('silver', 'Silver'), ('gold', 'Gold')],
                                 tracking=True, default="standard", string="VIP Tier")
 
-    current_year_net_invoiced = fields.Monetary(string="Current Year Net Invoiced", compute='_compute_current_year_net')
+    current_year_net_invoiced = fields.Monetary(string="Current Year Net Invoiced", compute='_compute_current_year_net', compute_sudo=True)
 
     def _get_current_year_net_invoiced(self):
         self.ensure_one()
@@ -21,7 +21,8 @@ class ResPartner(models.Model):
 
         return [('state', '=', 'posted'), ('invoice_date', '>=', date_start), ('invoice_date', '<=', date_end),
                 ('move_type', 'in', ('out_invoice', 'out_refund')),
-                ('commercial_partner_id', '=', self.commercial_partner_id.id)]
+                ('commercial_partner_id', '=', self.commercial_partner_id.id),
+                ('commercial_partner_id.customer_rank', '>', 0),]
 
     def _compute_current_year_net(self):
         for partner in self:

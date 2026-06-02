@@ -6,11 +6,13 @@
         <field name="inherit_id" ref="base.view_partner_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='category_id']" position="after">
-                <field name="vip_tier"/>
+                <field name="customer_rank" invisible="1"/>
+                <field name="vip_tier" attrs="{'invisible': [('customer_rank', '=', 0)]}"/>
             </xpath>
 
             <xpath expr="//group[@name='sale']" position="inside">
-                <field name="current_year_net_invoiced"/>
+                <field name="customer_rank" invisible="1"/>
+                <field name="current_year_net_invoiced" attrs="{'invisible': [('customer_rank', '=', 0)]}"/>
             </xpath>
         </field>
     </record>
