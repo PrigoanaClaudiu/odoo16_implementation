@@ -5,6 +5,14 @@
         <field name="model">sale.order</field>
         <field name="arch" type="xml">
             <tree string="Orders Waiting Approval" create="false" delete="false">
+                <header>
+                    <button name="action_confirm"
+                            string="Validate"
+                            type="object"
+                            class="btn-primary"
+                            groups="sales_team.group_sale_manager"
+                            confirm="Are you sure you want to validate the selected orders?"/>
+                </header>
                 <field name="name"/>
                 <field name="partner_id"/>
                 <field name="user_id"/>
